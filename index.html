@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Invaders</title>
+    <script src="pixi.min.js"></script>
+    <style>
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        canvas{
+            margin: auto;
+        }
+    </style>
+    
+</head>
+<body>
+
+    <p>
+        <li>Use mouse to change the angle</li>
+        <li>Press spacebar to fire</li>
+        <li>Beware of gravity</li>
+    </p>
+    <script>
+        let loader = PIXI.loader,
+            resources = PIXI.loader.resources,
+            Sprite = PIXI.Sprite;
+
+        let app = new PIXI.Application({ 
+            width: 800,        
+            height: 600,   
+            backgroundColor: 0xAAAAAA
+        });
+        document.body.appendChild(app.view);
+
+        loader
+            .add("cat.png")
+            .add("blob.png")
+            .add("bullet.png")
+            .load(setup);
+
+        let cat, state, blobSpeed, timer=0, message, livesLeft=4, rotation=0;
+
+        function setup(){
+            cat = new Sprite(resources["cat.png"].texture);
+            blob1 = new Sprite(resources["blob.png"].texture);
+            ammo = new Sprite(resources["bullet.png"].texture);
+            ammo2 = new Sprite(resources["bullet.png"].texture);
+            blob2 = new Sprite(resources["blob.png"].texture);
+            message = new PIXI.Text("Your Score");
+            life = new PIXI.Text("Lives Left: " + livesLeft);
+
+            app.stage.addChild(message);
+            app.stage.addChild(cat);
+            app.stage.addChild(blob1);
+            app.stage.addChild(blob2);
+            app.stage.addChild(ammo);
+            app.stage.addChild(ammo2);
+            app.stage.addChild(life);
+            app.stage.interactive = true;
+            app.stage.on("pointermove", moveTurret);
+
+            life.x = 200;
+            life.y =10;
+
+            cat.x=0;
+            cat.y=570;
+            cat.width= 30;
+            cat.height= 30;
+            cat.vx=0;
+            cat.vy=0;
+
+            message.x=10;
+            message.y=10;
+
+            ammo.width= 10;
+            ammo.height=20;
+            
+            ammo.x=15;
+            ammo.y=cat.y;  
+            ammo.vx=0;
+            ammo.vy=0;
+
+            ammo2.width= 50;
+            ammo2.height=20;
+            ammo2.x=15;
+            ammo2.y=cat.y;  
+
+            blobSpeed=2;
+            ammoSpeed=8;
+
+            blob1.y = -20
+            blob1.x=Math.floor((Math.random()*750))+1;
+            blob1.vy=blobSpeed;
+
+            blob2.y = -20
+            blob2.x=Math.floor((Math.random()*750))+1;
+            blob2.vy=0;
+
+            let up = keyboard("ArrowUp"),
+                down = keyboard("ArrowDown"),
+                space = keyboard(" ");
+
+            up.press = () => {
+                rotation += -0.05;
+            }
+
+            down.press = () => {
+                rotation += 0.05;
+            }
+
+            function moveTurret(e){
+                let pos = e.data.global;
+                let x = pos.x;
+                let y = 600-pos.y;
+                let theta = -1*Math.atan(y/x);
+                rotation = theta;
+            }
+
+            space.press = () => {
+                if(ammo.x === 15 && ammo.y === cat.y){
+                    ammo.vx= ammoSpeed * Math.cos(Math.abs(rotation));
+                    ammo.vy= ammoSpeed * Math.sin(rotation);
+                }
+            }
+
+            state = play;
+            app.ticker.add((delta) => gameloop(delta));
+        }
+
+        function gameloop(delta){    
+            state(delta);
+        }
+
+        let temp=0, tempBlob=0;
+        let scoreCounter = 0;
+
+        function play(delta){ 
+
+            if(scoreCounter > 10)
+            blob2.vy = blobSpeed;
+
+            blob1.y += blobSpeed;
+            blob2.y+=blob2.vy;
+            ammo.rotation=rotation;
+            ammo2.rotation=rotation;
+            timer+=1/60;
+
+            if(ammo.x > 15 || ammo.y!== cat.y){
+                ammo.vy+=0.04;
+            }
+            
+            ammo.x+=ammo.vx;
+            ammo.y+=ammo.vy;
+            
+            if(ammo.x > 800 || ammo.y > 600 || ammo.x < 0 || (ammo.x > blob1.x+20 && ammo.x > blob2.x+20)){
+                ammo.x=15;
+                ammo.y=cat.y;  
+                ammo.vx=0;
+                ammo.vy=0;
+            }
+
+            if(hitTestRectangle(ammo, blob1)  && ammo.x > 15 && ammo.x < 800){
+                scoreCounter++;
+                message.text='Your Score ' + scoreCounter;
+                blob1.y = -20;
+                blob1.x=Math.floor((Math.random()*750))+1;
+                ammo.x=15;
+                ammo.y=cat.y;  
+                ammo.vx=0;
+                ammo.vy=0;
+            }
+
+            if(hitTestRectangle(ammo, blob2) && ammo.x > 15 && ammo.x < 800){
+                scoreCounter++;
+                message.text='Your Score ' + scoreCounter;
+                blob2.y = -20;
+                blob2.x=Math.floor((Math.random()*750))+1;
+                ammo.x=15;
+                ammo.y=cat.y;  
+                ammo.vx=0;
+                ammo.vy=0;
+            }
+
+            if(Math.floor(blob1.y) > 600){
+                blob1.y = -20;
+                blob1.x=Math.floor((Math.random()*750))+1;
+                livesLeft--;
+                life.text = "Lives Left: " + livesLeft;
+                if(livesLeft === 0){
+                    alert("Game Over! Your Score is : " + scoreCounter);
+                    window.location.reload();
+                }
+                
+            }
+
+            if(Math.floor(blob2.y) > 600){
+                blob2.y = -20;
+                blob2.x=Math.floor((Math.random()*750))+1;
+                livesLeft--;
+                life.text = "Lives Left: " + livesLeft;
+                if(livesLeft === 0){
+                    alert("Game Over! Your Score is : " + scoreCounter);
+                    window.location.reload();
+                }
+
+                
+            }
+        }
+
+        function keyboard(value) {
+                let key = {};
+                key.value = value;
+                key.isDown = false;
+                key.isUp = true;
+                key.press = undefined;
+                key.release = undefined;
+                
+                key.downHandler = event => {
+                    if (event.key === key.value) {
+                    if (key.isUp && key.press) key.press();
+                    key.isDown = true;
+                    key.isUp = false;
+                    event.preventDefault();
+                    }
+                };
+
+                key.upHandler = event => {
+                    if (event.key === key.value) {
+                    if (key.isDown && key.release) key.release();
+                    key.isDown = false;
+                    key.isUp = true;
+                    event.preventDefault();
+                    }
+                };
+
+                const downListener = key.downHandler.bind(key);
+                const upListener = key.upHandler.bind(key);
+                
+                window.addEventListener(
+                    "keydown", downListener, false
+                );
+                window.addEventListener(
+                    "keyup", upListener, false
+                );
+                
+                key.unsubscribe = () => {
+                    window.removeEventListener("keydown", downListener);
+                    window.removeEventListener("keyup", upListener);
+                };
+                
+                return key;
+        }
+
+        function hitTestRectangle(r1, r2) {
+
+            let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
+            hit = false;
+
+            r1.centerX = r1.x + r1.width / 2;
+            r1.centerY = r1.y + r1.height / 2;
+            r2.centerX = r2.x + r2.width / 2;
+            r2.centerY = r2.y + r2.height / 2;
+
+            r1.halfWidth = r1.width / 2;
+            r1.halfHeight = r1.height / 2;
+            r2.halfWidth = r2.width / 2;
+            r2.halfHeight = r2.height / 2;
+
+            vx = r1.centerX - r2.centerX;
+            vy = r1.centerY - r2.centerY;
+
+            combinedHalfWidths = r1.halfWidth + r2.halfWidth;
+            combinedHalfHeights = r1.halfHeight + r2.halfHeight;
+
+            if (Math.abs(vx) < combinedHalfWidths) {
+                if (Math.abs(vy) < combinedHalfHeights) {
+                    hit = true;
+                } 
+                else{
+                    hit = false;
+                }
+            } 
+            else{
+                hit = false;
+            }
+            return hit;
+    };
+    </script>
+</body>
+</html>
