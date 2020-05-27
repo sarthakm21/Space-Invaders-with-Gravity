@@ -94,7 +94,7 @@
             blob1.x=Math.floor((Math.random()*750))+1;
             blob1.vy=blobSpeed;
 
-            blob2.y = -20
+            blob2.y = -25
             blob2.x=Math.floor((Math.random()*750))+1;
             blob2.vy=0;
 
@@ -148,13 +148,13 @@
             timer+=1/60;
 
             if(ammo.x > 15 || ammo.y!== cat.y){
-                ammo.vy+=0.04;
+                ammo.vy+=0.05;
             }
             
             ammo.x+=ammo.vx;
             ammo.y+=ammo.vy;
             
-            if(ammo.x > 800 || ammo.y > 600 || ammo.x < 0 || (ammo.x > blob1.x+20 && ammo.x > blob2.x+20)){
+            if(ammo.x > 800 || ammo.y > 600 || ammo.x < 0 || ammo.y < 0 || (ammo.x > blob1.x+20 && ammo.x > blob2.x+20)){
                 ammo.x=15;
                 ammo.y=cat.y;  
                 ammo.vx=0;
